@@ -1,0 +1,167 @@
+%% $Id: juliamono.sty 1164 2025-11-02 10:41:55Z herbert $
+%%
+%% This file is distributed under the terms of the LaTeX Project Public
+%% License from CTAN archives in directory  macros/latex/base/lppl.txt.
+%% Either version 1.3 or, at your option, any later version.
+%%
+% Copyright 2025 Herbert Voss hvoss@tug.org
+%%
+\ProvidesPackage{juliamono}[%
+  2025/11/02 v. 0.06 (Herbert Voß) Supports JuliaMono TrueType for lualatex/xelatex.] 
+%
+\RequirePackage{iftex,xkeyval}
+
+\@ifpackageloaded{fontspec}{}%
+  {\RequirePackage{fontspec}  % support opentype fonts
+   \setmainfont{lmroman10-regular.otf}%  There must be one main font
+  }
+%
+\providecommand\JuliaTT@features{Scale=MatchLowercase,FakeStretch=0.92}%  Typewriter
+\providecommand\Julia@DefaultFeatures{}
+\DeclareOptionX{DefaultFeatures}{\def\Julia@DefaultFeatures{#1}}
+
+\newif\ifJulia@black  \Julia@blackfalse  
+\newif\ifJulia@extra  \Julia@extrafalse  
+\newif\ifJulia@light  \Julia@lightfalse  
+\newif\ifJulia@medium  \Julia@mediumfalse  
+\newif\ifJulia@semi  \Julia@semifalse
+\newif\ifJulia@calt  \Julia@calttrue
+\newif\ifJulia@zero  \Julia@zerotrue
+
+\DeclareOptionX{Black}[true]{\@nameuse{Julia@black#1}\Julia@extrafalse}
+\DeclareOptionX{ExtraBold}[true]{\@nameuse{Julia@extra#1}\Julia@blackfalse}
+\DeclareOptionX{Light}[true]{\@nameuse{Julia@light#1}\Julia@mediumfalse}
+\DeclareOptionX{Medium}[true]{\@nameuse{Julia@medium#1}\Julia@lightfalse}
+\DeclareOptionX{Semi}[true]{\@nameuse{Julia@semi#1}\Julia@blackfalse\Julia@extrafalse}
+\DeclareOptionX{calt}[true]{\@nameuse{Julia@calt#1}}
+\DeclareOptionX{zero}[true]{\@nameuse{Julia@zero#1}}
+
+\def\Julia@FakeStretch{1}
+\def\Julia@Scale{1}
+\DeclareOptionX{Scale}[1]{\def\Julia@Scale{#1}}
+\DeclareOptionX{FakeStretch}[1]{\def\Julia@FakeStretch{#1}}
+
+\ProcessOptionsX\relax
+
+%\defaultfontfeatures{
+\expandafter\def\expandafter\JuliaTT@features\expandafter{\JuliaTT@features,
+  Ligatures=ResetAll,
+  \Julia@DefaultFeatures,
+%  RawFeature={-smcp,\ifJulia@calt +calt\fi},
+  \ifJulia@zero RawFeature={+zero},\fi
+  Scale=\Julia@Scale,
+  FakeStretch=\Julia@FakeStretch,
+  }% default in fontspec
+
+\def\JuliaSetCalt{\addfontfeature{RawFeature=+calt,Ligatures=ResetAll}}
+\def\JuliaUnsetCalt{\addfontfeature{RawFeature=-calt,Ligatures=TeX}}
+
+\def\Lss#1#2#3{{\addfontfeature{RawFeature=+ss#1#2}#3}}
+\def\LSS#1#2{\addfontfeature{RawFeature=+ss#1#2}}
+\def\Lcv#1#2#3{{\addfontfeature{RawFeature=+cv#1#2}#3}}
+\def\LCV#1#2{\addfontfeature{RawFeature=+cv#1#2}}
+
+
+%
+%  No.          Filename          Symbolic                Path                
+%  11.         JuliaMono-Regular.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%  12.   JuliaMono-RegularItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%   3.            JuliaMono-Bold.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%   4.      JuliaMono-BoldItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%   7.           JuliaMono-Light.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%   8.     JuliaMono-LightItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%   9.          JuliaMono-Medium.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%  10.    JuliaMono-MediumItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%  13.        JuliaMono-SemiBold.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%  14.  JuliaMono-SemiBoldItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%   1.           JuliaMono-Black.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%   2.     JuliaMono-BlackItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%   5.       JuliaMono-ExtraBold.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+%   6. JuliaMono-ExtraBoldItalic.ttf juliamono  /Users/voss/Library/Fonts/JuliaMono/
+
+%
+\typeout{Setting JuliaMono as mono font}%
+%\renewfontfamily\ttfamily{JuliaMono}[% main typewriter
+
+\setmonofont{JuliaMono}[% main typewriter
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+         UprightFont = \ifJulia@light  *-Light\else
+                       \ifJulia@medium *-Medium\else
+                                       *-Regular\fi\fi,
+            BoldFont = \ifJulia@black  *-Black\else
+                       \ifJulia@extra  *-ExtraBold\else
+                                       *-Bold\fi\fi,
+           ItalicFont= \ifJulia@light  *-LightItalic\else
+                       \ifJulia@medium *-MediumItalic\else
+                                       *-RegularItalic\fi\fi,
+      BoldItalicFont = \ifJulia@black *-BlackItalic\else
+                       \ifJulia@extra *-ExtraBoldItalic\else
+                       \ifJulia@semi  *-SemiBoldItalic\else
+                                      *-BoldItalic\fi\fi\fi,
+]
+%\AtBeginDocument{\JuliaMonoRegular}%
+%
+\newfontfamily\JuliaMonoLight{JuliaMono}[% 
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+          UprightFont= *-Light,
+            BoldFont = *-Bold,
+          ItalicFont = *-LightItalic,
+      BoldItalicFont = *-BoldItalic,
+    ]
+
+\newfontfamily\JuliaMonoSemi{JuliaMono}[% 
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+          UprightFont= *-Regular,
+            BoldFont = *-SemiBold,
+          ItalicFont = *-RegularItalic,
+      BoldItalicFont = *-SemiBoldItalic,
+    ]
+
+\newfontfamily\JuliaMonoMedium{JuliaMono}[% 
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+          UprightFont= *-Medium,
+            BoldFont = *-Black,
+          ItalicFont = *-MediumItalic,
+      BoldItalicFont = *-BoldItalic,
+    ]
+
+\newfontfamily\JuliaMonoBlack{JuliaMono}[% 
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+          UprightFont= *-Regular,
+            BoldFont = *-Black,
+          ItalicFont = *-RegularItalic,
+      BoldItalicFont = *-BlackItalic,
+    ]
+
+\newfontfamily\JuliaMonoExtraBold{JuliaMono}[% 
+               Scale = MatchLowercase,
+         FakeStretch = 0.92,
+         \JuliaTT@features,
+           Extension = .ttf,
+          UprightFont= *-Regular,
+            BoldFont = *-ExtraBold,
+          ItalicFont = *-RegularItalic,
+      BoldItalicFont = *-ExtraBoldItalic,
+    ]
+
+\endinput
