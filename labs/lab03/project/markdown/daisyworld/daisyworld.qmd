@@ -1,0 +1,116 @@
+Модель Daisyworld: анализ и визуализация
+
+В этом скрипте исследуется агентная модель Daisyworld.
+Модель демонстрирует взаимодействие ромашек и температуры поверхности планеты.
+Разные типы ромашек изменяют альбедо поверхности, что влияет на температуру
+и условия дальнейшего роста растений.
+
+### Подключение пакетов
+
+```julia
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+
+using DrWatson
+@quickactivate "project"
+
+using Agents
+using DataFrames
+using Plots
+using CairoMakie
+```
+
+### Подключение файла модели
+
+```julia
+include(srcdir("daisyworld.jl"))
+```
+
+### Создание модели
+
+```julia
+model = daisyworld()
+```
+
+Каждый агент имеет поле breed, определяющее тип ромашки.
+Эта функция используется для задания цвета агента на графике.
+
+```julia
+daisycolor(a::Daisy) = a.breed
+```
+
+### Настройка параметров визуализации
+
+```julia
+plotkwargs = (
+    agent_color = daisycolor,
+    agent_size = 20,
+    agent_marker = '✿',
+    heatarray = :temperature,
+    heatkwargs = (colorrange = (-20, 60),),
+)
+```
+
+### Начальное состояние модели
+
+```julia
+plt1, _ = abmplot(model; plotkwargs...)
+```
+
+На этом этапе распределение ромашек случайное,
+а температура еще не успела существенно измениться([рис. @fig-008]).
+
+![График](image/daisy_step001.png){#fig-008 width=70%}
+
+### Состояние после нескольких шагов симуляции
+
+```julia
+step!(model, 5)
+
+plt2, _ = abmplot(model;
+    heatarray = model.temperature,
+    plotkwargs...
+)
+```
+
+После нескольких шагов ромашки начинают размножаться
+в наиболее благоприятных температурных условиях ([рис. @fig-009]).
+
+![График](image/daisy_step005.png){#fig-009 width=70%}
+
+
+### Состояние после длительной эволюции
+
+```julia
+step!(model, 40)
+
+plt3, _ = abmplot(model;
+    heatarray = model.temperature,
+    plotkwargs...
+)
+```
+
+Через большее число шагов можно наблюдать формирование
+устойчивых областей с определенной температурой
+и скоплениями ромашек([рис. @fig-010]).
+
+![График](image/daisy_step040.png){#fig-010 width=70%}
+
+### Сохранение графиков
+
+```julia
+save(plotsdir("daisy_step001.png"), plt1)
+save(plotsdir("daisy_step005.png"), plt2)
+save(plotsdir("daisy_step040.png"), plt3)
+```
+
+
+### Выводы
+
+Модель Daisyworld демонстрирует механизм саморегуляции:
+взаимодействие растений и температуры приводит к
+стабилизации климатических условий.
+
+Даже простые локальные правила поведения агентов
+могут приводить к сложным глобальным эффектам системы.
+

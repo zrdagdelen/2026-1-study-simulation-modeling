@@ -1,0 +1,142 @@
+Daisyworld: исследование параметров модели
+
+В этом эксперименте исследуется влияние параметров модели
+Daisyworld на динамику численности черных и белых ромашек.
+Для этого запускается серия симуляций с различными
+значениями параметров.
+
+### Подключение пакетов и активация проекта
+
+```julia
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+
+using DrWatson
+@quickactivate "project"
+
+using Agents
+using DataFrames
+using Plots
+using CairoMakie
+```
+
+### Подключение реализации модели
+
+```julia
+include(srcdir("daisyworld.jl"))
+```
+
+### Определение типов агентов
+
+```julia
+black(a) = a.breed == :black
+white(a) = a.breed == :white
+```
+
+Будем собирать статистику по количеству
+черных и белых ромашек
+
+```julia
+adata = [(black, count), (white, count)]
+```
+
+### Параметры эксперимента
+
+Здесь задаются параметры модели.
+Некоторые параметры имеют несколько значений,
+поэтому будут автоматически сформированы
+разные комбинации параметров.
+
+```julia
+param_dict = Dict(
+    :griddims => (30, 30),
+    :max_age => [25, 40],
+    :init_white => [0.2, 0.8],
+    :init_black => 0.2,
+    :albedo_white => 0.75,
+    :albedo_black => 0.25,
+    :surface_albedo => 0.4,
+    :solar_change => 0.005,
+    :solar_luminosity => 1.0,
+    :scenario => :default,
+    :seed => 165,
+)
+```
+
+### Формирование списка комбинаций параметров
+
+Функция dict_list создаёт список всех возможных
+комбинаций параметров, которые будут протестированы.
+
+```julia
+params_list = dict_list(param_dict)
+```
+
+### Проведение серии симуляций
+
+```julia
+for params in params_list
+
+    model = daisyworld(; params...)
+
+    agent_df, model_df = run!(model, 1000; adata)
+```
+
+### Построение графика численности ромашек
+
+```julia
+    figure = Figure(size = (600, 400))
+
+    ax = figure[1, 1] = Axis(
+        figure,
+        xlabel = "tick",
+        ylabel = "daisy count"
+    )
+
+    blackl = lines!(
+        ax,
+        agent_df[!, :time],
+        agent_df[!, :count_black],
+        color = :black
+    )
+
+    whitel = lines!(
+        ax,
+        agent_df[!, :time],
+        agent_df[!, :count_white],
+        color = :orange
+    )
+
+    Legend(
+        figure[1, 2],
+        [blackl, whitel],
+        ["black", "white"],
+        labelsize = 12
+    )
+```
+
+### Сохранение графика
+
+```julia
+    plt_name = savename("daisy-count", params) * ".png"
+
+    save(plotsdir(plt_name), figure)
+end
+```
+
+### Анализ
+
+В данном эксперименте проводится серия симуляций
+с различными параметрами модели.
+
+Основное внимание уделяется:
+- максимальному возрасту ромашек
+- начальному количеству белых ромашек
+
+Для каждой комбинации параметров строится график
+изменения численности черных и белых ромашек во времени.
+
+Сравнение полученных графиков позволяет определить,
+как параметры модели влияют на устойчивость экосистемы
+и распределение типов растений.
+
