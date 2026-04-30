@@ -1,0 +1,62 @@
+# ## Базовый прогон модели SIR
+
+# ### Подготовка окружения
+
+# Подключаем необходимые пакеты для работы с моделью SIR.
+
+using DrWatson
+@quickactivate "project"
+using Random
+include(srcdir("SIRPetri.jl"))
+using .SIRPetri
+using DataFrames, CSV, Plots
+
+# ### Параметры модели
+
+# Задаём основные параметры эпидемии:
+# 
+# - `$/beta$` (бета) — коэффициент заражения (скорость перехода S -> I)
+# - `$/gamma$` (гамма) — коэффициент выздоровления (скорость перехода I -> R)
+# - `tmax` — максимальное время симуляции
+
+β = 0.3
+γ = 0.1
+tmax = 100.0
+
+# ### Создание сети Петри
+
+# Строим размеченную сеть Петри для модели SIR.
+# Начальная маркировка: 990 восприимчивых, 10 инфицированных, 0 выздоровевших.
+
+net, u0, states = build_sir_network(β, γ)
+
+# ### Детерминированная симуляция
+
+# Запускаем детерминированную симуляцию (решение системы ОДУ).
+# Результаты сохраняются в CSV-файл.
+
+df_det = simulate_deterministic(net, u0, (0.0, tmax), saveat = 0.5, rates = [β, γ])
+CSV.write(datadir("sir_det.csv"), df_det)
+
+# ### Стохастическая симуляция
+
+# Запускаем стохастическую симуляцию (алгоритм Гиллеспи).
+# Устанавливаем seed для воспроизводимости результатов.
+
+Random.seed!(123)
+df_stoch = simulate_stochastic(net, u0, (0.0, tmax), rates = [β, γ])
+CSV.write(datadir("sir_stoch.csv"), df_stoch)
+
+# ### Визуализация результатов
+
+# Строим графики динамики S, I, R для обоих типов симуляции.
+
+p_det = plot_sir(df_det)
+savefig(plotsdir("sir_det_dynamics.png"))
+
+p_stoch = plot_sir(df_stoch)
+savefig(plotsdir("sir_stoch_dynamics.png"))
+
+# ### Завершение
+
+println("Базовый прогон завершён. Результаты в data/ и plots/")
