@@ -1,0 +1,133 @@
+# # Модель М/М/с
+#
+# Система массового обслуживания с:
+# - пуассоновским входящим потоком (λ)
+# - экспоненциальным временем обслуживания (μ)
+# - c параллельными каналами
+
+# ## Подключение пакетов
+
+using DrWatson
+using Distributions
+using ConcurrentSim
+using ResumableFunctions
+using Random
+using StableRNGs
+using Plots
+
+# ## Параметры модели
+
+rng = StableRNG(123)
+num_customers = 1000
+num_servers = 2
+mu = 1.0 / 2.0   # интенсивность обслуживания
+lam = 0.9        # интенсивность поступления
+
+arrival_dist = Exponential(1 / lam)
+service_dist = Exponential(1 / mu)
+
+# ## Функция поведения клиента
+
+@resumable function customer(
+    env::Environment,
+    server::Resource,
+    id::Integer,
+    t_a::Float64,
+    d_s::Distribution,
+)
+    @yield timeout(env, t_a)
+    println("Customer $id arrived: ", now(env))
+    @yield request(server)
+    println("Customer $id entered service: ", now(env))
+    @yield timeout(env, rand(rng, d_s))
+    @yield release(server)
+    println("Customer $id exited service: ", now(env))
+end
+
+# ## Запуск модели
+
+function run_mmc()
+    sim = Simulation()
+    server = Resource(sim, num_servers)
+    arrival_time = 0.0
+    
+    for i in 1:num_customers
+        arrival_time += rand(rng, arrival_dist)
+        @process customer(sim, server, i, arrival_time, service_dist)
+    end
+    
+    run(sim)
+end
+
+# ## Аналитические формулы
+
+function analytical_metrics(λ, μ, c)
+    ρ = λ / (c * μ)
+    
+    # P0 — вероятность простоя всех каналов
+    sum1 = sum((c * ρ)^n / factorial(n) for n in 0:c-1)
+    sum2 = (c * ρ)^c / (factorial(c) * (1 - ρ))
+    P0 = 1 / (sum1 + sum2)
+    
+    # Pwait — вероятность ожидания (формула Эрланга)
+    Pwait = (c * ρ)^c / (factorial(c) * (1 - ρ)) * P0
+    
+    # Lq — среднее число заявок в очереди
+    Lq = ρ / (1 - ρ) * Pwait
+    
+    # Wq, W, L по формулам Литтла
+    Wq = Lq / λ
+    W = Wq + 1 / μ
+    L = λ * W
+    
+    return (ρ=ρ, P0=P0, Pwait=Pwait, Lq=Lq, Wq=Wq, W=W, L=L)
+end
+
+# ## График аналитических характеристик
+
+function plot_analytics()
+    λ_range = 0.1:0.05:1.5
+    c_vals = [1, 2, 3, 4]
+    
+    plots = []
+    for c in c_vals
+        μ_fixed = 1.0
+        Pwait_vals = [c * μ_fixed > λ ? 
+            analytical_metrics(λ, μ_fixed, c).Pwait : NaN for λ in λ_range]
+        
+        p = plot(λ_range, Pwait_vals,
+            label="c=$c",
+            xlabel="λ", ylabel="Pwait",
+            title="Вероятность ожидания")
+        push!(plots, p)
+    end
+    
+    plot(plots..., layout=(2,2))
+    savefig("mmc_analytics.png")
+    println("График сохранён как mmc_analytics.png")
+end
+
+# ## Основная функция
+
+function main()
+    println("=== Модель М/М/$num_servers ===\n")
+    println("Параметры: λ=$lam, μ=$mu, c=$num_servers")
+    
+    metrics = analytical_metrics(lam, mu, num_servers)
+    println("\nАналитические характеристики:")
+    println("ρ = $(round(metrics.ρ, digits=3))")
+    println("P0 = $(round(metrics.P0, digits=4))")
+    println("Pwait = $(round(metrics.Pwait, digits=4))")
+    println("Lq = $(round(metrics.Lq, digits=3))")
+    println("Wq = $(round(metrics.Wq, digits=3))")
+    println("W = $(round(metrics.W, digits=3))")
+    println("L = $(round(metrics.L, digits=3))")
+    
+    plot_analytics()
+    
+    # run_mmc()  # раскомментировать для запуска симуляции
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end
